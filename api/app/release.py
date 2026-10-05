@@ -46,9 +46,9 @@ def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _generated_at() -> str:
-    """当前 UTC 时间的 ISO-8601 字符串（秒精度，Z 后缀）。"""
-    return _utc_now().isoformat(timespec="seconds").replace("+00:00", "Z")
+def _generated_at(now: datetime | None = None) -> str:
+    """UTC 时间的 ISO-8601 字符串（秒精度，Z 后缀）。"""
+    return (now or _utc_now()).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def _new_release_id(now: datetime) -> str:
@@ -59,23 +59,21 @@ def _fmt_lab(lab: LabSnapshot) -> str:
     return f"L*={lab.L:g} a*={lab.a:g} b*={lab.b:g}"
 
 
-def _build_release_document(
+def build_release_text(
     standard: LabSnapshot,
     sample: LabSnapshot,
     label_raw: str,
     parsed: dict[str, object],
     verdict: dict[str, Any],
-) -> dict[str, Any]:
-    """生成与本次请求固定绑定的放行单：结构化字段 + 可复制整文 + 输入快照。
+    doc_id: str,
+    generated_at: str,
+) -> str:
+    """按放行单格式构造可复制正文。
 
-    文本中的批号/标签原文都是本次请求的逐字符快照；结构化字段（数值与字符串）
-    供自动化逐字段核对“字段身份”，避免两项独立结果被误配。
+    签发新单与复核旧单共用这一个函数，确保“复算后重建正文”与原签发规则完全一致。
     """
     batch = parsed["batch"]
     assert isinstance(batch, dict)
-    now = _utc_now()
-    doc_id = _new_release_id(now)
-    generated_at = _generated_at()
 
     verdict_word = "✅ 放行" if verdict["passed"] else "⛔ 超差"
     relation = verdict["relation"]
@@ -98,8 +96,30 @@ def _build_release_document(
         label_raw,
         "<<<",
     ]
-    text = "\n".join(lines)
+    return "\n".join(lines)
 
+
+def _build_release_document(
+    standard: LabSnapshot,
+    sample: LabSnapshot,
+    label_raw: str,
+    parsed: dict[str, object],
+    verdict: dict[str, Any],
+) -> dict[str, Any]:
+    """生成与本次请求固定绑定的放行单：结构化字段 + 可复制整文 + 输入快照。
+
+    文本中的批号/标签原文都是本次请求的逐字符快照；结构化字段（数值与字符串）
+    供自动化逐字段核对“字段身份”，避免两项独立结果被误配。
+    """
+    now = _utc_now()
+    doc_id = _new_release_id(now)
+    generated_at = _generated_at(now)
+    text = build_release_text(
+        standard, sample, label_raw, parsed, verdict, doc_id, generated_at
+    )
+
+    batch = parsed["batch"]
+    assert isinstance(batch, dict)
     return {
         "id": doc_id,
         "generated_at": generated_at,

@@ -472,3 +472,114 @@ button:disabled {
   white-space: pre;
   resize: vertical;
 }
+
+/* ── 复制放行单复核 ─────────────────────────────────────────────── */
+
+.review-panel h2 {
+  font-size: 20px;
+  margin: 0 0 8px;
+}
+
+.review-result {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.review-auth {
+  border-radius: 12px;
+  border: 2px solid;
+  padding: 14px 18px;
+}
+
+.review-auth.pass {
+  background: #fdf6e3;
+  border-color: #d8a93a;
+  color: #7a5a10;
+}
+
+.review-auth.fail {
+  background: #fdf0f0;
+  border-color: #d24a4a;
+  color: #8f2020;
+}
+
+.review-auth p {
+  margin: 6px 0 0;
+  line-height: 1.6;
+}
+
+.review-ok {
+  border: 2px solid #36a55f;
+  background: #ecf8f0;
+  color: #1d7a40;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.review-mismatches {
+  border: 1px solid #d7dde6;
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+.review-mismatches h3,
+.review-rebuilt h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.review-mismatches ol {
+  margin: 0;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.review-mismatch-item {
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eef1f6;
+}
+
+.review-mismatch-head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.review-mismatch-item p {
+  margin: 4px 0;
+}
+
+.review-compare {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+.review-compare code {
+  background: #eef1f6;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.review-rebuilt {
+  border: 1px solid #b8c2d1;
+  border-radius: 10px;
+  background: #fff;
+  padding: 14px 18px;
+}
+
+.review-old-snapshot-note {
+  font-weight: 700;
+  margin-bottom: 0;
+}

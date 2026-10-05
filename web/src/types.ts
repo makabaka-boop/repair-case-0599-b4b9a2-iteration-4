@@ -140,6 +140,56 @@ export interface BatchReleaseRequestError {
   errors: FieldError[];
 }
 
+/* ── 复制放行单复核（独立只读入口） ─────────────────────────────────── */
+
+export interface ReviewMismatch {
+  section: "metadata" | "color" | "label" | "release" | "text";
+  field: string;
+  message: string;
+  expected: unknown;
+  actual: unknown;
+  line: number | null;
+  column: number | null;
+  position: number | null;
+}
+
+export interface ReviewDocument {
+  id: string;
+  generated_at: string;
+  standard: { L: number; a: number; b: number };
+  sample: { L: number; a: number; b: number };
+  result: DeltaEResult;
+  batch: Gs1BatchInfo;
+  label_raw: string;
+  text: string;
+}
+
+export interface ReleaseReviewSuccessResponse {
+  ok: true;
+  review_scope: "content_consistency_only";
+  authenticated: false;
+  authenticity_status: "content_consistent_unsigned" | "inconsistent_unsigned";
+  authenticity_message: string;
+  content_consistent: boolean;
+  mismatch_count: number;
+  mismatches: ReviewMismatch[];
+  recalculated: {
+    color_check: ColorCheck;
+    label_check: LabelCheck;
+    release: Omit<ReviewDocument, "batch" | "text"> & {
+      batch: Gs1BatchInfo | null;
+      text: string | null;
+    };
+  };
+  imported_snapshot: ReviewDocument;
+}
+
+export interface ReleaseReviewRequestError {
+  ok: false;
+  message: string;
+  errors: FieldError[];
+}
+
 export const THRESHOLD = 2.0;
 export const EMPTY_FORM: LabForm = {
   standard: { L: "", a: "", b: "" },

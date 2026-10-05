@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from typing import Any, Literal
 
-from fastapi import FastAPI
+from fastapi import Body, FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -14,6 +14,7 @@ from .ciede2000 import CIELab, ciede2000
 from .gs1 import Gs1ParseError, parse_gs1_label
 from .judge import judge
 from .release import LabSnapshot, evaluate_batch_release
+from .review import ReviewImportError, review_release_document
 
 app = FastAPI(
     title="专色墨 ΔE00 比对 API",
@@ -174,3 +175,28 @@ def batch_release(req: BatchReleaseRequest) -> dict[str, Any]:
     standard = LabSnapshot(req.standard.L, req.standard.a, req.standard.b)
     sample = LabSnapshot(req.sample.L, req.sample.a, req.sample.b)
     return evaluate_batch_release(standard, sample, req.label_raw)
+
+
+@app.post("/api/release-review")
+def release_review(document: Any = Body(..., description="既有结构化放行单 JSON")) -> Any:
+    """复核复制出来的放行单：只验内容自洽，不把旧单鉴真为服务端签发。
+
+    请求体必须是一张结构化放行单本身（不是新批次表单）。必要字段、JSON 类型、
+    Lab 有限性与范围由复核模块严格检查；导入失败返回 422，且不产生复核快照。
+    成功后依据内嵌 Lab 与标签原文重走 CIEDE2000 / GS1 / 正文格式，逐项返回
+    不一致位置。无服务端签名时 ``authenticated`` 恒为 false。
+    """
+    try:
+        return review_release_document(document)
+    except ReviewImportError as exc:
+        return JSONResponse(
+            status_code=422,
+            content={
+                "ok": False,
+                "message": "放行单导入失败：结构化字段或类型不合规，未执行复核，也不会更新任何放行单",
+                "errors": [
+                    {**err, "field": err["field"] or "body"}
+                    for err in exc.errors
+                ],
+            },
+        )

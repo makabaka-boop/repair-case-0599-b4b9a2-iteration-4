@@ -105,6 +105,47 @@ curl -s -X POST http://localhost:8001/api/batch-release \
        "label_raw":"(01)09506000134353(10)INK2407(17)280930"}'
 ```
 
+### 复制放行单复核入口（只读，独立于新批次表单）
+
+交接班拿到复制出来的旧批次放行单时，页面最下方使用第三个独立入口
+**“复制放行单复核”**，把完整的结构化 `release` JSON 粘贴进去（
+`POST /api/release-review`，请求体是放行单对象本身，不是新批次表单，也不包外层）。
+后端严格校验必要字段和 JSON 类型：Lab 必须是有限数值且在既有范围内，编号、时间、
+`result`、`batch`、`label_raw`、`text` 均按固定结构接收；缺失、多余字段、字符串冒充
+数值、布尔值冒充 Lab、空标签等一律 **422 导入失败**，不产生复核结果。
+
+导入成功后，后端只使用单据内嵌的两组 Lab 原值与逐字符标签原文，重新执行现有
+CIEDE2000 判定、GS1 解析和组合放行规则，再用单据自身编号、生成时间、复算字段与
+标签快照重建正文。响应中的 `mismatches` 逐项给出不一致位置：
+
+- `result.*`：内嵌色差结果与 Lab 原值复算结果不一致；
+- `batch.gtin/lot/expires`：结构化批次字段与标签原文重新解析结果不一致；
+- `text.lines[n]`：重建正文与原正文的行、首个差异列及双方整行内容；
+- `id` / `generated_at`：编号格式、时间格式或编号内嵌时间不一致；
+- `document`：单据自称放行单，但复算后色差或标签未通过。
+
+复核结论固定在本次成功导入的 JSON 快照上。继续编辑 JSON 只会提示旧结论已过期；
+导入失败不会覆盖旧快照；前端用请求序号丢弃迟到响应。该入口不读写上方新批次表单，
+也不改变 `/api/delta-e`、`/api/gs1-label`、`/api/batch-release` 三个既有流程。
+
+**内容自洽 ≠ 签发来源真实。**当前系统没有服务端密码学签名可验证，因此旧单即使完全
+自洽，响应也固定返回：
+
+```json
+{"authenticated": false,
+ "authenticity_status": "content_consistent_unsigned",
+ "content_consistent": true}
+```
+
+页面明确显示“**内容自洽（未鉴真）**”，不会冒称已由服务端鉴真；发现篡改时显示
+“内容不自洽（未鉴真）”。
+
+```bash
+curl -s -X POST http://localhost:8001/api/release-review \
+  -H 'Content-Type: application/json' \
+  -d '{"id":"REL-...","generated_at":"...","standard":{...},"sample":{...},
+       "result":{...},"batch":{...},"label_raw":"...","text":"..."}'
+```
 
 ```bash
 curl -s -X POST http://localhost:8001/api/gs1-label \
@@ -128,10 +169,11 @@ api/                 FastAPI 服务
   app/judge.py       最终舍入与 ≤ 2.00 判定
   app/gs1.py         GS1 应用标识符解析（定长/变长、校验位、日历日期）
   app/release.py     批次放行单组合裁决：同请求复用色差判定+GS1 解析，双项通过才出凭据
-  app/main.py        端点 /api/delta-e、/api/gs1-label、/api/batch-release、/health 与逐字段错误（422）
-  tests/             pytest（Sharma 2005 公开 34 对参考色对 + 3 个极端对 + GS1 标签解析 + 组合裁决/字段身份）
+  app/review.py      复制放行单复核：重算 CIEDE2000/GS1/正文，只判定内容自洽，不鉴真旧单
+  app/main.py        端点 /api/delta-e、/api/gs1-label、/api/batch-release、/api/release-review、/health
+  tests/             pytest（CIEDE2000、GS1、组合裁决、复制单复核/导入校验）
 web/                 React + TypeScript（Vite）
-  src/               录入、即时校验、结果面板、批次标签核验区、批次放行单流程
+  src/               录入、即时校验、结果面板、标签核验区、批次放行流程、复制放行单复核
   e2e/               Playwright 真实联调（浏览器 → nginx → FastAPI）
 verify/              一次性验收服务（pytest + Vitest + Playwright）
 docker-compose.yml   web / api / verify 三个服务
@@ -182,17 +224,20 @@ docker compose run --rm verify
    GS1 标签解析（两种格式、定长/变长规则、校验位、真实日历日期、错误定位，以及尾随空格
    逐字符保留、中部/末尾控制符与多字节字符的字符集拒绝、可编码长度计数、稳定错误代码）；
    批次放行单组合裁决（四种通过/失败组合、无半张凭据、422 与核验失败区分、字段身份快照、
-   凭据唯一编号）。
+   凭据唯一编号）；复制放行单复核（内容自洽与未鉴真分离、数值/批号/尾随空格/正文/多字段
+   篡改定位、严格字段类型导入失败）。
 2. **Vitest**：前端输入校验（缺失/非有限/越界/端点）与旧结论清除；
    标签核验区状态机（待输入/已识别/已拒绝）、错误定位、尾随空格可见化与控制字符字形；
-   批次放行单（输入修改后只标记不一致不改写凭据、乱序迟到响应被丢弃、422/网络异常后的页面状态）。
+   批次放行单（输入修改后只标记不一致不改写凭据、乱序迟到响应被丢弃、422/网络异常后的页面状态）；
+   复制放行单复核（成功快照固定、编辑/导入失败/迟到响应不改写、页面状态隔离）。
 3. **Playwright**：真实浏览器经 nginx 访问 FastAPI，覆盖放行、超差、端点值、
    422 字段错误、NaN 拒绝、旧结论清除与恢复；标签核验区一次有效扫描、
    一次损坏标签重试、尾随空格两种格式、中部/末尾 TAB/NUL/LF/emoji 拒绝与页面可见文本、
    序列号与 90–99 内部字段字符集、AIM+FNC1+行尾兼容，以及色差主流程在标签核验失败时
    仍可独立完成；批次放行单双项通过出凭据、超差/标签失败/请求异常三态区分、
    凭据固定与复制、输入修改后的不一致标记、连续提交乱序响应不覆盖新凭据、
-   尾随空格快照，以及两个既有独立入口不受影响。
+   尾随空格快照，以及两个既有独立入口不受影响；复制放行单复核真实重算并覆盖自洽未鉴真、
+   数值/批号/标签空格/正文/多字段篡改、422 导入失败、继续编辑和表单状态隔离。
 
 ## 本地开发（不用 Docker）
 

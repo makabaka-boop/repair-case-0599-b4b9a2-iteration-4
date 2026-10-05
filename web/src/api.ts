@@ -5,6 +5,8 @@ import type {
   DeltaESuccessResponse,
   Gs1LabelErrorResponse,
   Gs1LabelSuccessResponse,
+  ReleaseReviewRequestError,
+  ReleaseReviewSuccessResponse,
 } from "./types";
 
 export type ApiOutcome =
@@ -147,5 +149,57 @@ export async function postBatchRelease(payload: {
     ok: false,
     status: res.status,
     error: body as BatchReleaseRequestError | null,
+  };
+}
+
+export type ReleaseReviewOutcome =
+  | { ok: true; data: ReleaseReviewSuccessResponse }
+  | { ok: false; status: number; error: ReleaseReviewRequestError | null };
+
+/**
+ * 调用 /api/release-review：导入一张已存在的结构化放行单并复核内容自洽性。
+ * 该入口只读取入的 JSON 快照，不签发、不鉴真、不影响新批次放行表单。
+ */
+export async function postReleaseReview(
+  document: unknown,
+): Promise<ReleaseReviewOutcome> {
+  let res: Response;
+  try {
+    res = await fetch("/api/release-review", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(document),
+    });
+  } catch {
+    return {
+      ok: false,
+      status: 0,
+      error: {
+        ok: false,
+        message: "无法连接放行单复核服务，请确认 API 已启动",
+        errors: [{ field: "network", message: "网络请求失败" }],
+      },
+    };
+  }
+
+  let body: unknown = null;
+  try {
+    body = await res.json();
+  } catch {
+    body = null;
+  }
+
+  if (
+    res.ok &&
+    body &&
+    typeof body === "object" &&
+    (body as ReleaseReviewSuccessResponse).ok === true
+  ) {
+    return { ok: true, data: body as ReleaseReviewSuccessResponse };
+  }
+  return {
+    ok: false,
+    status: res.status,
+    error: body as ReleaseReviewRequestError | null,
   };
 }
