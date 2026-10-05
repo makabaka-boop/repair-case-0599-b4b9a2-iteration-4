@@ -59,24 +59,21 @@ def _fmt_lab(lab: LabSnapshot) -> str:
     return f"L*={lab.L:g} a*={lab.a:g} b*={lab.b:g}"
 
 
-def _build_release_document(
+def build_release_text(
+    doc_id: str,
+    generated_at: str,
     standard: LabSnapshot,
     sample: LabSnapshot,
     label_raw: str,
-    parsed: dict[str, object],
+    batch: dict[str, object],
     verdict: dict[str, Any],
-) -> dict[str, Any]:
-    """生成与本次请求固定绑定的放行单：结构化字段 + 可复制整文 + 输入快照。
+) -> str:
+    """由单据编号、生成时间、两组 Lab、批次字段与色差复算结果重建放行单正文。
 
-    文本中的批号/标签原文都是本次请求的逐字符快照；结构化字段（数值与字符串）
-    供自动化逐字段核对“字段身份”，避免两项独立结果被误配。
+    放行单签发（:func:`_build_release_document`）与交接班复核（:mod:`app.review`）
+    共用这一份逐字符正文构造，保证“复算重建”与“当初签发”永远走同一段逻辑，
+    两套入口不会因模板漂移而给出彼此矛盾的正文。
     """
-    batch = parsed["batch"]
-    assert isinstance(batch, dict)
-    now = _utc_now()
-    doc_id = _new_release_id(now)
-    generated_at = _generated_at()
-
     verdict_word = "✅ 放行" if verdict["passed"] else "⛔ 超差"
     relation = verdict["relation"]
     lines = [
@@ -98,7 +95,30 @@ def _build_release_document(
         label_raw,
         "<<<",
     ]
-    text = "\n".join(lines)
+    return "\n".join(lines)
+
+
+def _build_release_document(
+    standard: LabSnapshot,
+    sample: LabSnapshot,
+    label_raw: str,
+    parsed: dict[str, object],
+    verdict: dict[str, Any],
+) -> dict[str, Any]:
+    """生成与本次请求固定绑定的放行单：结构化字段 + 可复制整文 + 输入快照。
+
+    文本中的批号/标签原文都是本次请求的逐字符快照；结构化字段（数值与字符串）
+    供自动化逐字段核对“字段身份”，避免两项独立结果被误配。
+    """
+    batch = parsed["batch"]
+    assert isinstance(batch, dict)
+    now = _utc_now()
+    doc_id = _new_release_id(now)
+    generated_at = _generated_at()
+
+    text = build_release_text(
+        doc_id, generated_at, standard, sample, label_raw, batch, verdict
+    )
 
     return {
         "id": doc_id,

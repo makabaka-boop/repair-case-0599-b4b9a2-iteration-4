@@ -8,12 +8,13 @@ from typing import Any, Literal
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictFloat, StrictStr, field_validator
 
 from .ciede2000 import CIELab, ciede2000
 from .gs1 import Gs1ParseError, parse_gs1_label
 from .judge import judge
 from .release import LabSnapshot, evaluate_batch_release
+from .review import review_release_document
 
 app = FastAPI(
     title="专色墨 ΔE00 比对 API",
@@ -174,3 +175,96 @@ def batch_release(req: BatchReleaseRequest) -> dict[str, Any]:
     standard = LabSnapshot(req.standard.L, req.standard.a, req.standard.b)
     sample = LabSnapshot(req.sample.L, req.sample.a, req.sample.b)
     return evaluate_batch_release(standard, sample, req.label_raw)
+
+
+# ── 放行单复核（交接班独立入口） ─────────────────────────────────────────
+
+
+class ReleaseReviewLab(BaseModel):
+    """放行单内嵌的一组 Lab 原值：严格类型、有限值与范围，缺一即整次拒绝。
+
+    用 StrictFloat：JSON 数字（含整数）接受，但数字字符串不做隐式转换——
+    复核要识别“字段类型被改坏”的复制件。
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    L: StrictFloat
+    a: StrictFloat
+    b: StrictFloat
+
+    @field_validator("L", "a", "b")
+    @classmethod
+    def _finite_and_in_range(cls, v: float, info: Any) -> float:
+        if not math.isfinite(v):
+            raise ValueError("必须是有限数值（拒绝 NaN 与 ±Infinity）")
+        low, high = BOUNDS[info.field_name]
+        if not (low <= v <= high):
+            raise ValueError(f"超出允许范围 [{low:g}, {high:g}]，端点包含")
+        return v
+
+
+class ReleaseReviewVerdict(BaseModel):
+    """单据内嵌的复算字段快照：逐字段类型必须正确（bool 不被 int/字符串顶替）。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    delta_e00: StrictFloat
+    delta_e00_round: StrictFloat
+    threshold: StrictFloat
+    passed: StrictBool
+    excess_raw: StrictFloat
+    excess_round: StrictFloat
+    relation: StrictStr
+
+    @field_validator(
+        "delta_e00", "delta_e00_round", "threshold", "excess_raw", "excess_round"
+    )
+    @classmethod
+    def _finite(cls, v: float) -> float:
+        if not math.isfinite(v):
+            raise ValueError("必须是有限数值（拒绝 NaN 与 ±Infinity）")
+        return v
+
+
+class ReleaseReviewBatch(BaseModel):
+    """单据内嵌批次三字段：必须是字符串；是否与标签原文一致由复核逐项比对。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    gtin: StrictStr = Field(..., min_length=1)
+    lot: StrictStr = Field(..., min_length=1)
+    expires: StrictStr = Field(..., min_length=1)
+
+
+class ReleaseReviewDocument(BaseModel):
+    """复制出来的结构化放行单：严格检查必要字段与类型，多余字段同样拒绝。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: StrictStr = Field(..., min_length=1)
+    generated_at: StrictStr = Field(..., min_length=1)
+    standard: ReleaseReviewLab
+    sample: ReleaseReviewLab
+    result: ReleaseReviewVerdict
+    batch: ReleaseReviewBatch
+    label_raw: StrictStr = Field(..., min_length=1, max_length=512)
+    text: StrictStr = Field(..., min_length=1)
+
+
+@app.post("/api/release-review")
+def release_review(req: ReleaseReviewDocument) -> dict[str, Any]:
+    """交接班复核：对内嵌放行单 JSON 只做“内容自洽”复核，不鉴真、不签发。
+
+    用单据内嵌的两组 Lab 原值与逐字符标签原文，重新走现有 CIEDE2000 判定、
+    GS1 解析与组合放行规则，再用单据自身编号、时间与复算字段重建可读正文，
+    逐项指出原判定、解析批次或正文的不一致位置。
+
+    * 结构非法（缺字段/类型错/Lab 非有限或越界/标签原文空串/多余字段）→ 422
+      整次拒绝，不产生复核结论（与既有端点同一全局处理器）；
+    * 结构合法即返回 200，所有复算不符以 ``checks.mismatches`` 逐项定位；
+    * 无服务端签名时 ``source_authentic`` 恒为 false——自洽也不得冒称已鉴真；
+    * 只读导入快照，不读写任何正在填写的新批次表单，也不改变既有放行单。
+    """
+    # model_dump 递归地把嵌套模型展开成普通 dict（形态与签发端构造的 release 相同）
+    return review_release_document(req.model_dump())

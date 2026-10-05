@@ -5,6 +5,8 @@ import type {
   DeltaESuccessResponse,
   Gs1LabelErrorResponse,
   Gs1LabelSuccessResponse,
+  ReleaseReviewRequestError,
+  ReleaseReviewResponse,
 } from "./types";
 
 export type ApiOutcome =
@@ -147,5 +149,61 @@ export async function postBatchRelease(payload: {
     ok: false,
     status: res.status,
     error: body as BatchReleaseRequestError | null,
+  };
+}
+
+export type ReleaseReviewOutcome =
+  | { ok: true; data: ReleaseReviewResponse }
+  | { ok: false; status: number; error: ReleaseReviewRequestError | null };
+
+/**
+ * 调用 /api/release-review（交接班独立复核入口）：提交一张复制出来的结构化
+ * 放行单 JSON，后端只判“内容自洽”，绝不鉴真、不签发、不改写任何现有放行单。
+ *
+ * - 200：复核完成（可能自洽，也可能在 checks.mismatches 里逐项指出不一致）；
+ * - 422：导入结构非法（缺字段/类型错/Lab 越界/标签空串等），整次拒绝；
+ * - status=0：网络层异常（无法连接服务）。
+ */
+export async function postReleaseReview(
+  document: unknown,
+): Promise<ReleaseReviewOutcome> {
+  let res: Response;
+  try {
+    res = await fetch("/api/release-review", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(document),
+    });
+  } catch {
+    return {
+      ok: false,
+      status: 0,
+      error: {
+        ok: false,
+        message: "无法连接放行单复核服务，请确认 API 已启动",
+        errors: [{ field: "network", message: "网络请求失败" }],
+      },
+    };
+  }
+
+  let body: unknown = null;
+  try {
+    body = await res.json();
+  } catch {
+    body = null;
+  }
+
+  if (
+    res.ok &&
+    body &&
+    typeof body === "object" &&
+    (body as ReleaseReviewResponse).ok === true
+  ) {
+    return { ok: true, data: body as ReleaseReviewResponse };
+  }
+  return {
+    ok: false,
+    status: res.status,
+    error: body as ReleaseReviewRequestError | null,
   };
 }

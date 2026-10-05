@@ -472,3 +472,227 @@ button:disabled {
   white-space: pre;
   resize: vertical;
 }
+
+/* ── 放行单复核（交接班独立入口） ───────────────────────────────────── */
+
+.review-panel h2 {
+  font-size: 20px;
+  margin: 0 0 8px;
+}
+
+.review-busy-hint {
+  align-self: center;
+  color: #8390a2;
+  font-size: 13px;
+}
+
+.review-report {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.review-pinned-note {
+  border: 1px solid #d8a93a;
+  background: #fdf6e3;
+  color: #7a5a10;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.review-verdict {
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-weight: 700;
+}
+
+.review-verdict.pass {
+  border: 2px solid #1d7a40;
+  background: #eef9f2;
+  color: #166534;
+}
+
+.review-verdict.fail {
+  border: 2px solid #d24a4a;
+  background: #fdf0f0;
+  color: #b32626;
+}
+
+/* 鉴真块刻意用中性灰：不是成功也不是失败，而是恒定的“无法证明来源” */
+.review-auth {
+  border: 2px solid #8a94a3;
+  background: #f1f3f6;
+  color: #3c4654;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+}
+
+.review-auth-message {
+  margin-top: 4px;
+  font-weight: 400;
+  font-size: 12.5px;
+  color: #5a6573;
+  line-height: 1.6;
+}
+
+.review-checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.review-check {
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  border: 1px solid transparent;
+}
+
+.review-check.pass {
+  background: #eef9f2;
+  border-color: #9fd3b2;
+  color: #166534;
+}
+
+.review-check.fail {
+  background: #fdf0f0;
+  border-color: #e3a1a1;
+  color: #b32626;
+}
+
+.review-mismatches {
+  border: 1px solid #e3a1a1;
+  background: #fff7f7;
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+.review-mismatches h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: #b32626;
+}
+
+.review-mismatches ul {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.review-mismatch {
+  border-left: 3px solid #d24a4a;
+  background: #fff;
+  border-radius: 0 8px 8px 0;
+  padding: 8px 12px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.review-mismatch-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.review-mismatch-head code {
+  font-weight: 700;
+  color: #b32626;
+}
+
+.review-mismatch-pos {
+  color: #7a5a10;
+  background: #fdf6e3;
+  border-radius: 6px;
+  padding: 1px 8px;
+  font-size: 12px;
+}
+
+.review-compare {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin-top: 2px;
+  color: #5a6573;
+}
+
+.review-compare code {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.review-recomputed,
+.review-snapshot {
+  border: 1px solid #d7dde6;
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+.review-recomputed h3,
+.review-snapshot h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.review-recomputed dl,
+.review-snapshot dl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px 16px;
+  margin: 0 0 8px;
+}
+
+@media (max-width: 720px) {
+  .review-recomputed dl,
+  .review-snapshot dl {
+    grid-template-columns: 1fr;
+  }
+}
+
+.review-recomputed dt,
+.review-snapshot dt {
+  color: #5a6573;
+  font-size: 12px;
+}
+
+.review-recomputed dd,
+.review-snapshot dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+}
+
+.review-snapshot dd.verbatim-value {
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.review-text-label {
+  color: #5a6573;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.review-rebuilt-text {
+  width: 100%;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  border: 1px solid #b8c2d1;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fbfcfe;
+  white-space: pre;
+  resize: vertical;
+}

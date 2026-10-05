@@ -140,6 +140,75 @@ export interface BatchReleaseRequestError {
   errors: FieldError[];
 }
 
+/* ── 放行单复核（交接班独立入口） ─────────────────────────────────────── */
+
+/** 复核的五个检查项：元数据/色差复算/标签重解析/组合放行规则/正文重建。 */
+export type ReviewCheckName =
+  | "meta"
+  | "color"
+  | "label"
+  | "release_rule"
+  | "text";
+
+/** 一条定位到字段的不一致明细；内嵌值与复算值并排给出。 */
+export interface ReviewMismatch {
+  check: ReviewCheckName;
+  field: string;
+  embedded: unknown;
+  recomputed: unknown;
+  message: string;
+  /** 仅正文不一致时存在：首个差异的行/列（均从 1 起，按码点计）。 */
+  position?: {
+    line: number | null;
+    column: number | null;
+    kind: string;
+    embedded: string | null;
+    recomputed: string | null;
+  };
+}
+
+/** 鉴真结论：本系统不放签名，任何复制件都恒定为“未鉴真”。 */
+export interface ReviewAuthentication {
+  authenticated: false;
+  signed: false;
+  message: string;
+}
+
+export interface ReleaseReviewResponse {
+  ok: true;
+  /** 内容自洽：内嵌原值复算与单据自身声称逐项一致（≠ 来源真实）。 */
+  content_self_consistent: boolean;
+  /** 签发来源真实：无服务端签名，恒为 false。 */
+  source_authentic: false;
+  authentication: ReviewAuthentication;
+  checks: {
+    passed: ReviewCheckName[];
+    failed: ReviewCheckName[];
+    mismatches: ReviewMismatch[];
+  };
+  recomputed: {
+    color: DeltaEResult;
+    batch: Gs1BatchInfo | null;
+    text: string | null;
+  };
+  /** 本次导入快照的逐字段回显：复核结论固定于此，之后编辑不改变它。 */
+  imported: {
+    id: string;
+    generated_at: string;
+    standard: { L: number; a: number; b: number };
+    sample: { L: number; a: number; b: number };
+    label_raw: string;
+    batch: Gs1BatchInfo;
+    text: string;
+  };
+}
+
+export interface ReleaseReviewRequestError {
+  ok: false;
+  message: string;
+  errors: FieldError[];
+}
+
 export const THRESHOLD = 2.0;
 export const EMPTY_FORM: LabForm = {
   standard: { L: "", a: "", b: "" },

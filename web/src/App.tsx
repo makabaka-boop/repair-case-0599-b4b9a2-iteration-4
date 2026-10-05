@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { postDeltaE } from "./api";
 import { BatchLabelPanel } from "./BatchLabelPanel";
 import { BatchReleasePanel } from "./BatchReleasePanel";
+import { ReleaseReviewPanel } from "./ReleaseReviewPanel";
 import { ColorFieldSet } from "./ColorFieldSet";
 import { ResultPanel } from "./ResultPanel";
 import type {
@@ -181,6 +182,12 @@ export default function App() {
 
       {/* 可选组合流程：自己的输入与凭据状态完全独立，不读写上方两个入口。 */}
       <BatchReleasePanel />
+
+      <hr className="divider" />
+
+      {/* 交接班复核：只读粘贴的放行单 JSON 复制件，不鉴真、不签发，
+          不读写上方三个流程，结论固定于本次导入快照。 */}
+      <ReleaseReviewPanel />
     </main>
   );
 }
