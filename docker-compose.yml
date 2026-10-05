@@ -1,0 +1,53 @@
+# 专色墨 ΔE00 放行比对：web（React + nginx）与 api（FastAPI）真实联调。
+# 宿主端口可用环境变量覆盖：WEB_PORT（默认 8080）、API_PORT（默认 8001）。
+#
+#   docker compose up -d --build
+#   docker compose run --rm verify     # 一次性验收：pytest + Vitest + Playwright E2E
+
+services:
+  api:
+    build:
+      context: ./api
+    image: spot-ink-delta-e-api
+    container_name: delta-e-api
+    restart: unless-stopped
+    expose:
+      - "8000"
+    ports:
+      - "${API_PORT:-8001}:8000"
+
+  web:
+    build:
+      context: ./web
+    image: spot-ink-delta-e-web
+    container_name: delta-e-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8080}:80"
+
+  # 一次性验收服务：后端参考色对 pytest + 前端 Vitest + 浏览器真实联调 Playwright。
+  verify:
+    build:
+      context: .
+      dockerfile: verify/Dockerfile
+    image: spot-ink-delta-e-verify
+    container_name: delta-e-verify
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    environment:
+      # 验收在 compose 网络内访问服务名，而非宿主映射端口
+      API_BASE_URL: http://api:8000
+      WEB_BASE_URL: http://web:80
+    volumes:
+      - ./api:/workspace/api:ro
+      - ./web:/workspace/web:ro
+      - ./verify:/workspace/verify:ro
+    entrypoint: ["/workspace/verify/entrypoint.sh"]
+    command: ["/workspace/verify/run-verify.sh"]
+    profiles: ["verify"]

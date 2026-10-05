@@ -1,0 +1,474 @@
+:root {
+  font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  color: #1c2430;
+  background: #f4f6f9;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+header h1 {
+  font-size: 26px;
+  margin: 0 0 8px;
+}
+
+.subhead {
+  color: #5a6573;
+  margin: 0 0 24px;
+  line-height: 1.6;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 720px) {
+  .cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.color-card {
+  border: 1px solid #d7dde6;
+  border-radius: 10px;
+  background: #fff;
+  padding: 16px 18px 18px;
+  margin: 0;
+}
+
+.color-card legend {
+  padding: 0 6px;
+}
+
+.hint {
+  margin-left: 8px;
+  color: #8390a2;
+  font-size: 12px;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-label {
+  font-weight: 600;
+}
+
+.field-label small {
+  display: block;
+  color: #8390a2;
+  font-weight: 400;
+}
+
+.field input {
+  padding: 8px 10px;
+  border: 1px solid #b8c2d1;
+  border-radius: 6px;
+  font-size: 15px;
+  width: 100%;
+}
+
+.field input[aria-invalid="true"] {
+  border-color: #d23a3a;
+  background: #fff6f6;
+}
+
+.field-error {
+  color: #c02b2b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+button {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid #b8c2d1;
+  background: #fff;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+button.primary {
+  background: #1f63c2;
+  border-color: #1f63c2;
+  color: #fff;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.server-errors {
+  border: 1px solid #e0a4a4;
+  background: #fdf0f0;
+  color: #8f2020;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.server-errors ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.placeholder {
+  color: #8390a2;
+}
+
+.result {
+  border-radius: 12px;
+  padding: 20px 24px;
+  border: 2px solid transparent;
+}
+
+.result.pass {
+  background: #ecf8f0;
+  border-color: #36a55f;
+}
+
+.result.fail {
+  background: #fdf0f0;
+  border-color: #d24a4a;
+}
+
+.verdict {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.result.pass .verdict {
+  color: #1d7a40;
+}
+
+.result.fail .verdict {
+  color: #b32626;
+}
+
+.metric {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+.metric-name {
+  color: #5a6573;
+  min-width: 64px;
+}
+
+.metric-value {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.relation {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 10px 0;
+}
+
+.formula {
+  font-variant-numeric: tabular-nums;
+}
+
+.relation-word {
+  font-weight: 600;
+}
+
+.excess-note {
+  color: #8f2020;
+}
+
+/* ── 批次标签核验区 ─────────────────────────────────────────────── */
+
+.divider {
+  border: none;
+  border-top: 1px solid #d7dde6;
+  margin: 36px 0 28px;
+}
+
+.label-panel h2 {
+  font-size: 20px;
+  margin: 0 0 8px;
+}
+
+.hint-block {
+  color: #5a6573;
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 0 0 14px;
+}
+
+.hint-block code {
+  background: #eef1f6;
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin: 0 3px;
+  font-size: 12px;
+}
+
+.label-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.label-status {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.label-status.status-idle {
+  background: #eef1f6;
+  color: #5a6573;
+}
+
+.label-status.status-recognized {
+  background: #ecf8f0;
+  color: #1d7a40;
+  border: 1px solid #36a55f;
+}
+
+.label-status.status-rejected {
+  background: #fdf0f0;
+  color: #b32626;
+  border: 1px solid #d24a4a;
+}
+
+.label-format {
+  color: #8390a2;
+  font-size: 12px;
+}
+
+.label-input textarea {
+  padding: 8px 10px;
+  border: 1px solid #b8c2d1;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  width: 100%;
+  resize: vertical;
+}
+
+.error-position {
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+.raw-highlight {
+  background: #fff;
+  border: 1px solid #e0a4a4;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 8px 0 0;
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.raw-highlight mark {
+  background: #ffd2d2;
+  color: #8f2020;
+  border: 1px solid #c02b2b;
+  border-radius: 3px;
+  padding: 0 2px;
+  font-weight: 700;
+}
+
+.label-result {
+  border: 2px solid #36a55f;
+  background: #ecf8f0;
+  border-radius: 12px;
+  padding: 14px 20px;
+}
+
+.label-result dl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .label-result dl {
+    grid-template-columns: 1fr;
+  }
+}
+
+.label-result dt {
+  color: #5a6573;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.label-result dd {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+}
+
+/* 逐字符展示后端返回值：保留尾随空格（显式渲染为 ␠），不被 HTML 折叠 */
+.label-result dd.verbatim-value {
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* ── 批次放行单（可选组合流程） ───────────────────────────────────── */
+
+.release-panel h2 {
+  font-size: 20px;
+  margin: 0 0 8px;
+}
+
+.release-busy-hint {
+  align-self: center;
+  color: #8390a2;
+  font-size: 13px;
+}
+
+.release-outcome {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.check-line {
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+
+.check-line.pass {
+  color: #1d7a40;
+}
+
+.release-not-issued {
+  border: 2px solid #d24a4a;
+  background: #fdf0f0;
+  color: #b32626;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 0;
+  font-weight: 600;
+}
+
+.release-mismatch {
+  border: 1px solid #d8a93a;
+  background: #fdf6e3;
+  color: #7a5a10;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.release-document-wrap {
+  border: 2px solid #1f63c2;
+  background: #f2f7ff;
+  border-radius: 12px;
+  padding: 16px 20px 20px;
+}
+
+.release-doc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.release-doc-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #174a8f;
+}
+
+.release-copy-hint {
+  display: inline-block;
+  margin: 6px 0 0;
+  color: #1d7a40;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.release-doc-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px 16px;
+  margin: 12px 0;
+}
+
+@media (max-width: 720px) {
+  .release-doc-meta {
+    grid-template-columns: 1fr;
+  }
+}
+
+.release-doc-meta dt {
+  color: #5a6573;
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.release-doc-meta dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+}
+
+.release-doc-meta dd.verbatim-value {
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.release-document-text {
+  width: 100%;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  border: 1px solid #b8c2d1;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fff;
+  white-space: pre;
+  resize: vertical;
+}
